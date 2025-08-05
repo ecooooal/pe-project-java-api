@@ -1,17 +1,40 @@
-# Use Maven base image with OpenJDK 20
-FROM maven:3.9.4-eclipse-temurin-20
+# Stage 1: Build
+FROM maven:3.9.11-eclipse-temurin-21-alpine AS builder
 
-# Set the working directory inside the container to /app
 WORKDIR /app
-
-# Copy everything from the current directory (on the host) to /app in the container
 COPY . /app
 
+# Optional: preload dependencies
 RUN mvn dependency:go-offline
 
-RUN mvn clean package -DskipTests
+# Compile without tests
+RUN mvn compile
 
-# Expose port 8082
+# Stage 2: Runtime
+FROM eclipse-temurin:21-jdk-alpine
+
+WORKDIR /app
+
+# Copy project and compiled code
+COPY --from=builder /app /app
+
+# Expose port used by your HTTP server
 EXPOSE 8082
 
+# Launch using exec-maven-plugin
 CMD ["mvn", "compile", "exec:java"]
+
+# -----------------------------------------------
+# OPTIONAL RESOURCE LIMITS (use in docker-compose)
+# -----------------------------------------------
+# In docker-compose.yml:
+#
+# deploy:
+#   resources:
+#     limits:
+#       memory: 512M
+#       cpus: '0.5'
+#
+# Note: 'deploy' only works in swarm mode. For dev/testing, use:
+#    mem_limit: 512m
+#    cpus: 0.5

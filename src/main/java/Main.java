@@ -85,12 +85,12 @@ public class Main {
                 return;
             }
 
-            CodeExecutor userCode = getData(exchange);
+            CodeContext context = transformToGSON(exchange);
 
-            CodeResponse response = userCode.validate();
+            CodeExecutionRunner runner = new CodeExecutionRunner(); // builds and runs the chain
+            CodeResponse response = runner.run(context);            // instead of userCode.validate()
 
             String json = gson.toJson(response);
-            byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
 
             File file = new File("bin/validation-result.json");
 
@@ -106,17 +106,17 @@ public class Main {
         }
     }
 
-    private static CodeExecutor getData(HttpExchange exchange) throws IOException {
+    private static CodeContext transformToGSON(HttpExchange exchange) throws IOException {
         Gson gson = new Gson();
 
         InputStream bodyStream = exchange.getRequestBody();
         String body = new String(bodyStream.readAllBytes(), StandardCharsets.UTF_8);
         System.out.println(body);
-        CodeExecutor userCode = gson.fromJson(body, CodeExecutor.class);
-        userCode.assignClassNames();
-        System.out.println(userCode);
+        CodeContext context = gson.fromJson(body, CodeContext.class);
+        context.assignClassNames();
+        System.out.println(context);
 
-        return userCode;
+        return context;
     }
 
     private static void respond(HttpExchange exchange, int status, String json) throws IOException {
