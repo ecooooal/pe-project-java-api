@@ -19,10 +19,10 @@ public class Main {
     public static void main(String[] args) throws Exception {
         try {
 
-            HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8082), 0);
+            HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", 8090), 0);
 
             server.createContext("/ping", new Ping());
-            server.createContext("/validate", new ValidateCode());
+            server.createContext("/execute", new ExecuteCode());
 
             server.setExecutor(null);
             System.out.println("Java Executor started on port 8082");
@@ -76,7 +76,7 @@ public class Main {
         return gson.toJson(logData);
     }
 
-    static class ValidateCode implements HttpHandler {
+    static class ExecuteCode implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException
         {
@@ -85,7 +85,7 @@ public class Main {
                 return;
             }
 
-            CodeValidator userCode = getData(exchange);
+            CodeExecutor userCode = getData(exchange);
 
             CodeResponse response = userCode.validate();
 
@@ -106,13 +106,13 @@ public class Main {
         }
     }
 
-    private static CodeValidator getData(HttpExchange exchange) throws IOException {
+    private static CodeExecutor getData(HttpExchange exchange) throws IOException {
         Gson gson = new Gson();
 
         InputStream bodyStream = exchange.getRequestBody();
         String body = new String(bodyStream.readAllBytes(), StandardCharsets.UTF_8);
         System.out.println(body);
-        CodeValidator userCode = gson.fromJson(body, CodeValidator.class);
+        CodeExecutor userCode = gson.fromJson(body, CodeExecutor.class);
         userCode.assignClassNames();
         System.out.println(userCode);
 

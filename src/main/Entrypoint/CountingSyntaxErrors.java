@@ -15,7 +15,8 @@ public class CountingSyntaxErrors {
         int points = 5;
         System.out.println("Current Question Points for this coding problem: " + points);
 
-        String code = loadCode("SimleCalculator.java");
+        // Instead of Loading the code is already saved 
+        String code = loadCode("SimleCalculator.java"); 
         String code2 =
                 """
                 class SimpleCalculator {
@@ -26,12 +27,15 @@ public class CountingSyntaxErrors {
                 }
                 """;
         if (code == null) {
+            // Better debug info
             System.out.println("Failed to load the code.");
             return;
         }
 
         System.out.println("Java code loaded:\n" + code);
 
+        // We compile it here, If compilation error send it back deduct points accordingly
+        // if compilation error no runtime and test case points
         int success = compileCode(code);
         System.out.println(success);
 
