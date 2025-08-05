@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,6 +26,7 @@ public class CodeContext {
 
     protected String nameCode;
     protected String nameTestUnit;
+    protected List<String> debug = new ArrayList<>();
     protected Action action;
 
     public Action getParsedAction() {
@@ -51,5 +54,4 @@ public class CodeContext {
 
         return className;
     }
-    // ... maybe result holders, etc.
 }

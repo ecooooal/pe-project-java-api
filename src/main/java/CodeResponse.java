@@ -15,22 +15,25 @@ class PointInfo {
 
 
 public class CodeResponse {
+
     public boolean success;
     public List<TestResult> testResults;
     public List<String> failures;
+    public List<String> debug;
     public String output;
     public List<PointInfo> points = new ArrayList<>();
 
 
-    public CodeResponse(boolean success, List<TestResult> testResults, List<String> failures, String output) {
+    public CodeResponse(boolean success, List<TestResult> testResults, List<String> failures, String output, List<String> debug) {
         this.success = success;
         this.testResults = testResults;
         this.failures = failures;
         this.output = output;
+        this.debug = debug;
     }
 
-    public CodeResponse(boolean success, List<TestResult> testResults, List<String> failures, String output, List<PointInfo> points) {
-        this(success, testResults, failures, output);
+    public CodeResponse(boolean success, List<TestResult> testResults, List<String> failures, String output, List<PointInfo> points, List<String> debug) {
+        this(success, testResults, failures, output, debug);
         this.points = points;
     }
 
@@ -44,25 +47,20 @@ public class CodeResponse {
             this.methods = new ArrayList<>();
         }
 
-        public void addMethod(String methodName, String status, String message) {
+        public void addMethod(String methodName, TestStatus status, String message) {
             methods.add(new TestMethodResult(methodName, status, message));
         }
     }
 
     public static class TestMethodResult {
         public String methodName;
-        public String status;
+        public TestStatus status;
         public String message;
 
-        public TestMethodResult(String methodName, String status, String message) {
+        public TestMethodResult(String methodName, TestStatus status, String message) {
             this.methodName = methodName;
             this.status = status;
             this.message = message;
         }
     }
-
-    public void addPoint(String syntax, String runtime, String testcase) {
-        points.add(new PointInfo(syntax, runtime, testcase));
-    }
-
 }

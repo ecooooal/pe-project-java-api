@@ -13,46 +13,34 @@ public class RuntimeHandler implements CodeHandler {
 
     @Override
     public CodeResponse handle(CodeContext context) {
+        context.debug.add("RunTimeHandler: RunTimeHandler Starting.");
+
         // Check Runtime errors in code
         try {
-            System.out.println("Validating the Complete Solution Code");
+            deleteDirectory(new File("reports"));
+
+            context.debug.add("RunTimeHandler: Running the code against the test code.");
             Process run = runCode(context.nameTestUnit);
-            int failedTestCount = 0;
 
-
-
+            context.debug.add("RunTimeHandler: Code is running... will threw exception if it exceeds 10 seconds.");
             context.output = read(run.getInputStream());
             // if CHECK and runtime errors then deduct from runtime_points and set test case points to 0 then send response
             // KILL IF EXCEEDS 10 SECONDS
             boolean finished = run.waitFor(10, TimeUnit.SECONDS);
 
             if (!finished) {
+                context.debug.add("RunTimeHandler: Runtime exceeded 10 seconds and now will be destroyed.");
                 run.destroyForcibly();
-                System.out.println("Runtime timeout.");
-                return new CodeResponse(false, List.of(), List.of("Compilation timed out."), "");
-            }
-
-            int runStatus = run.exitValue(); // now it's safe to read
-
-            if (runStatus != 0 && context.action == CodeContext.Action.CHECK) {
-                int deductedRuntime = Math.min(5, context.runtime_points);
-                int remainingRuntime = Math.max(0, context.runtime_points - deductedRuntime);
-
-                return new CodeResponse(
-                        false,
-                        new ArrayList<>(),
-                        List.of("Runtime Error:\n" + context.output),
-                        context.output,
-                        List.of(new PointInfo(
-                                String.valueOf(context.syntax_points),
-                                String.valueOf(remainingRuntime),
-                                "0"
-                        ))
-                );
+                return new CodeResponse(false, List.of(), List.of("Runtime timed out."), "", context.debug);
             }
         } catch (Exception e) {
-            return new CodeResponse(false, new ArrayList<>(), List.of(e.toString()), "");
+            context.debug.add("RunTimeHandler: try code block threw exception.");
+            return new CodeResponse(false, new ArrayList<>(), List.of(e.toString()), "", context.debug);
         }
+
+        context.debug.add("RunTimeHandler: Running code did not throw any exceptions.");
+
+        context.debug.add("RunTimeHandler: Now sending the context to TestEvaluationHandler.");
 
         // Then call next if exists
         return next != null ? next.handle(context) : null;
@@ -78,4 +66,23 @@ public class RuntimeHandler implements CodeHandler {
                 .start();
         return run;
     }
+
+    public static boolean deleteDirectory(File dir) {
+        if (dir == null || !dir.exists()) {
+            return false;
+        }
+
+        if (dir.isDirectory()) {
+            File[] children = dir.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    if (!deleteDirectory(child)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return dir.delete(); // delete file or empty dir
+    }
 }
+

@@ -25,7 +25,7 @@ public class Main {
             server.createContext("/execute", new ExecuteCode());
 
             server.setExecutor(null);
-            System.out.println("Java Executor started on port 8082");
+            System.out.println("Java Executor started on port 8090");
             server.start();
 
         } catch (IOException e) {
@@ -85,24 +85,22 @@ public class Main {
                 return;
             }
 
-            CodeContext context = transformToGSON(exchange);
 
-            CodeExecutionRunner runner = new CodeExecutionRunner(); // builds and runs the chain
-            CodeResponse response = runner.run(context);            // instead of userCode.validate()
+            try {
+                CodeContext context = transformToGSON(exchange);
 
-            String json = gson.toJson(response);
+                CodeExecutionRunner runner = new CodeExecutionRunner();
+                CodeResponse response = runner.run(context);
 
-            File file = new File("bin/validation-result.json");
+                String json = gson.toJson(response);
 
-            try (FileWriter fileWriter = new FileWriter(file)) {
-                fileWriter.write(json);
-                fileWriter.flush();
-                System.out.println("Response saved to " + file.getAbsolutePath());
-            } catch (IOException e) {
-                e.printStackTrace();
+                respond(exchange, 200, json);
+
+            } catch (Exception e) {
+                e.printStackTrace();  // Log to Docker logs
+                String error = gson.toJson(Map.of("error", e.getMessage()));
+                respond(exchange, 500, error);
             }
-
-            respond(exchange, 200, json);
         }
     }
 
