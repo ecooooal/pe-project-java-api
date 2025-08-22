@@ -138,8 +138,9 @@
                 }
 
                 context.debug.add("TestEvaluationHandler: End of TestEvaluationHandler.");
-
-                return new CodeResponse(allPassed, new ArrayList<>(resultMap.values()), new ArrayList<>(), context.output, context.debug);
+                CodeResponse response = new CodeResponse(allPassed, new ArrayList<>(resultMap.values()), new ArrayList<>(), context.output, context.debug);
+                response.evaluateSuccess();
+                return response;
             } catch (Exception e) {
                 context.debug.add("TestEvaluationHandler: An Exception is thrown");
                 return new CodeResponse(false, new ArrayList<>(), List.of(e.toString()), "", context.debug);

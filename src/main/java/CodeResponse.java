@@ -63,4 +63,25 @@ public class CodeResponse {
             this.message = message;
         }
     }
+
+    public void evaluateSuccess() {
+        boolean hasFailures = false;
+
+        if (testResults != null) {
+            outer:
+            for (TestResult testResult : testResults) {
+                if (testResult.methods != null) {
+                    for (TestMethodResult method : testResult.methods) {
+                        if (method.status != TestStatus.PASSED) {
+                            hasFailures = true;
+                            break outer;
+                        }
+                    }
+                }
+            }
+        }
+
+        this.success = !hasFailures;
+    }
+
 }
