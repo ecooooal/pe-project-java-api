@@ -23,6 +23,9 @@ public class CodeContext {
     Integer syntax_points;
     Integer runtime_points;
     Integer test_case_points;
+    Integer syntax_points_deduction;
+    Integer runtime_points_deduction;
+    Integer test_case_points_deduction;
 
     protected String nameCode;
     protected String nameTestUnit;
@@ -37,6 +40,9 @@ public class CodeContext {
         if (syntax_points == null) syntax_points = 0;
         if (runtime_points == null) runtime_points = 0;
         if (test_case_points == null) test_case_points = 0;
+        if (syntax_points_deduction == null) syntax_points_deduction = 1;
+        if (runtime_points_deduction == null) runtime_points_deduction = 1;
+        if (test_case_points_deduction == null) test_case_points_deduction = 1;
 
         this.nameCode = getClassName(this.code);
         this.nameTestUnit = getClassName(this.testUnit);

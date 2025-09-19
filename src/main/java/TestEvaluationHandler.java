@@ -52,7 +52,6 @@
                             NodeList children = testCase.getChildNodes();
                             boolean hasFailureOrError = false;
 
-                            context.debug.add("TestEvaluationHandler: " + xml.getName() + " : Reading class " + className + " with method " + methodName + " children.");
                             for (int j = 0; j < children.getLength(); j++) {
                                 Node node = children.item(j);
                                 if (node.getNodeType() == Node.ELEMENT_NODE) {
@@ -79,7 +78,7 @@
                                         hasFailureOrError = true;
                                         break;
                                     }
-                                    context.debug.add("TestEvaluationHandler: " + xml.getName() + " : Reading class " + className + " with method " + methodName + " child data: " + " Name " + child.getNodeName() + " status " + status);
+                                    context.debug.add("TestEvaluationHandler: " + " : Reading class " + className + " with method " + methodName + " status : " + status);
                                 }
                             }
 
@@ -103,25 +102,31 @@
                         .flatMap(r -> r.methods.stream())
                         .allMatch(m -> m.status == TestStatus.PASSED);
 
-                context.debug.add("TestEvaluationHandler: Did all test cases passed? " + allPassed);
+                context.debug.add("TestEvaluationHandler: Did all test cases passed? : " + allPassed);
 
                 // If CHECK then for every FAILED test case deduct from test_case_points
                 if (context.action == CodeContext.Action.CHECK) {
 
                     int remainingTestCase = 0;
+                    int testCasePointsToDeduct = 0;
                     if (runtimeErrorCount == 0){
-                        int deductedTestCasePoints = Math.min(context.test_case_points, failedTestCount);
+                        testCasePointsToDeduct = failedTestCount * context.test_case_points_deduction;
+                        int deductedTestCasePoints = Math.min(context.test_case_points, testCasePointsToDeduct);
                         remainingTestCase = Math.max(0, context.test_case_points - deductedTestCasePoints);
                     }
-                    int deductedRunTimePoints = Math.min(context.runtime_points, runtimeErrorCount);
+                    int runTimePointsToDeduct = runtimeErrorCount * context.runtime_points_deduction;
+                    int deductedRunTimePoints = Math.min(context.runtime_points, runTimePointsToDeduct);
                     int remainingRunTimePoints = Math.max(0, context.runtime_points - deductedRunTimePoints);
 
                     context.debug.add("CodeResponse: success=" + allPassed +
-                            ", runtime=" + context.runtime_points +
-                            ", test_case=" + context.test_case_points +
-                            ", syntax=" + context.syntax_points);
+                            ", syntax=" + context.syntax_points +
+                            ", runtime=" + remainingRunTimePoints +
+                            ", test_case=" + remainingTestCase +
+                            ", syntax_deducted=" + 0 +
+                            ", runtime_deducted=" + runTimePointsToDeduct +
+                            ", test_case_deducted=" + testCasePointsToDeduct );
 
-                    context.debug.add("TestEvaluationHandler: Now sending the response back.");
+                    context.debug.add("TestEvaluationHandler: 🟢 Now sending the response back.");
 
                     return new CodeResponse(
                             allPassed,
@@ -142,7 +147,7 @@
                 response.evaluateSuccess();
                 return response;
             } catch (Exception e) {
-                context.debug.add("TestEvaluationHandler: An Exception is thrown");
+                context.debug.add("TestEvaluationHandler: 🔴 An Exception is thrown");
                 return new CodeResponse(false, new ArrayList<>(), List.of(e.toString()), "", context.debug);
             }
         }

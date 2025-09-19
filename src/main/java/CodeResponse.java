@@ -6,6 +6,7 @@ class PointInfo {
     public String runtime;
     public String testcase;
 
+
     public PointInfo(String syntax, String runtime, String testcase) {
         this.syntax = syntax;
         this.runtime = runtime;

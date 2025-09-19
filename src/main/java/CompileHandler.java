@@ -31,19 +31,19 @@ public class CompileHandler implements CodeHandler {
             boolean finished = compile.waitFor(10, TimeUnit.SECONDS);
 
             if (!finished) {
-                context.debug.add("CompileHandler: Compilation exceeded 10 seconds and now will be destroyed.");
+                context.debug.add("CompileHandler: 🔴 Compilation exceeded 10 seconds and now will be destroyed.");
                 compile.destroyForcibly();
                 return new CodeResponse(false, List.of(), List.of("Compilation timed out. Exceeded 10 seconds compiling"), "", context.debug);
             }
 
-            context.debug.add("CompileHandler: Compilation Success.");
+            context.debug.add("CompileHandler: 🟢 Compilation Success.");
 
             int compileStatus = compile.exitValue(); // now it's safe to read
 
             if (compileStatus  != 0) {
                 // if CHECK then deduct from syntax_points and set runtime and test case points to 0 then send response
                 if (context.action == CodeContext.Action.COMPILE || context.action == CodeContext.Action.CHECK) {
-                    context.debug.add("CompileHandler: Compilation Unsuccessful.");
+                    context.debug.add("CompileHandler: 🔴 Compilation Unsuccessful.");
 
 
                     Set<String> errorLines = new HashSet<>();
@@ -55,8 +55,8 @@ public class CompileHandler implements CodeHandler {
                             errorLines.add(matcher.group(1));
                         }
                     }
-
-                    int deducted = Math.min(context.syntax_points, errorLines.size());
+                    int syntaxPointsToDeduct =  errorLines.size() * context.syntax_points_deduction;
+                    int deducted = Math.min(context.syntax_points, syntaxPointsToDeduct);
                     int remainingSyntax = Math.max(0, context.syntax_points - deducted);
 
                     // Set others to 0 if syntax fails
@@ -75,14 +75,14 @@ public class CompileHandler implements CodeHandler {
                     return response;
 
                 } else {
-                    context.debug.add("CompileHandler: Compiling returns blank.");
+                    context.debug.add("CompileHandler: 🔴 Compiling returns blank.");
 
                     return new CodeResponse(false, new ArrayList<>(), List.of(compileOutput), "", context.debug);
                 }
             }
 
             if (context.action == CodeContext.Action.COMPILE) {
-                context.debug.add("CompileHandler: Request is to compile only.");
+                context.debug.add("CompileHandler: 🟠 Request is to compile only.");
 
                 return new CodeResponse(
                         false,
@@ -97,7 +97,7 @@ public class CompileHandler implements CodeHandler {
             return new CodeResponse(false, new ArrayList<>(), List.of(e.toString()), "", context.debug);
         }
 
-        context.debug.add("CompileHandler: Now sending the context to RunTimeHandler.");
+        context.debug.add("CompileHandler: 🟢 Now sending the context to RunTimeHandler.");
 
         // Then call next if exists
         return next != null ? next.handle(context) : null;

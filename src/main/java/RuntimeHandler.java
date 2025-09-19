@@ -29,18 +29,18 @@ public class RuntimeHandler implements CodeHandler {
             boolean finished = run.waitFor(10, TimeUnit.SECONDS);
 
             if (!finished) {
-                context.debug.add("RunTimeHandler: Runtime exceeded 10 seconds and now will be destroyed.");
+                context.debug.add("RunTimeHandler: 🔴 Runtime exceeded 10 seconds and now will be destroyed.");
                 run.destroyForcibly();
                 return new CodeResponse(false, List.of(), List.of("Runtime timed out."), "", context.debug);
             }
         } catch (Exception e) {
-            context.debug.add("RunTimeHandler: try code block threw exception.");
+            context.debug.add("RunTimeHandler: 🔴 try code block threw exception.");
             return new CodeResponse(false, new ArrayList<>(), List.of(e.toString()), "", context.debug);
         }
 
-        context.debug.add("RunTimeHandler: Running code did not throw any exceptions.");
+        context.debug.add("RunTimeHandler: 🟢 Running code did not throw any exceptions.");
 
-        context.debug.add("RunTimeHandler: Now sending the context to TestEvaluationHandler.");
+        context.debug.add("RunTimeHandler: 🟢 Now sending the context to TestEvaluationHandler.");
 
         // Then call next if exists
         return next != null ? next.handle(context) : null;
