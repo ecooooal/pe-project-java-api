@@ -27,6 +27,8 @@ public class CodeContext {
     Integer runtime_points_deduction;
     Integer test_case_points_deduction;
 
+    Boolean syntax_coding_question_only;
+
     protected String nameCode;
     protected String nameTestUnit;
     protected List<String> debug = new ArrayList<>();
@@ -36,17 +38,22 @@ public class CodeContext {
         return Action.fromString(request_action);
     }
 
-    public void assignClassNames() {
+    public void assignVariables(){
         if (syntax_points == null) syntax_points = 0;
         if (runtime_points == null) runtime_points = 0;
         if (test_case_points == null) test_case_points = 0;
         if (syntax_points_deduction == null) syntax_points_deduction = 1;
         if (runtime_points_deduction == null) runtime_points_deduction = 1;
         if (test_case_points_deduction == null) test_case_points_deduction = 1;
-
-        this.nameCode = getClassName(this.code);
-        this.nameTestUnit = getClassName(this.testUnit);
+        if (syntax_coding_question_only == null) syntax_coding_question_only = true;
         this.action = getParsedAction();
+    }
+
+    public void assignClassNames() {
+        this.nameCode = getClassName(this.code);
+        if (!this.syntax_coding_question_only){
+            this.nameTestUnit = getClassName(this.testUnit);
+        }
     }
 
     protected static String getClassName(String code){

@@ -23,65 +23,113 @@ public class CompileHandler implements CodeHandler {
             // Compile code
             context.debug.add("CompileHandler: Starting compilation.");
 
-            Process compile = compileCode(context.nameCode, context.nameTestUnit);
+            Process compileSolution = compileSolutionCode(context.nameCode);
+            CodeResponse errorResponse = executeCompilationProcess(
+                    compileSolution,
+                    "Solution Code",
+                    context,
+                    true
+            );
+            if (errorResponse != null) { return errorResponse;}
 
-            context.debug.add("CompileHandler: Compiling... will threw exception if it exceeds 10 seconds.");
-            String compileOutput = read(compile.getInputStream());
-            // KILL IF EXCEEDS 10 SECONDS
-            boolean finished = compile.waitFor(10, TimeUnit.SECONDS);
+            // Compile Test Unit
+            if (!context.syntax_coding_question_only) {
+                context.debug.add("CompileHandler: Question is not Syntax Only, proceeding to compile a TestUnit. " + context.nameTestUnit);
+                Process compileTest = compileTestUnit(context.nameTestUnit);
+                CodeResponse errorTestUnitResponse = executeCompilationProcess(
+                        compileTest,
+                        "Test Unit",
+                        context,
+                        false
+                );
+            if (errorTestUnitResponse != null) {return errorTestUnitResponse;}
 
-            if (!finished) {
-                context.debug.add("CompileHandler: 🔴 Compilation exceeded 10 seconds and now will be destroyed.");
-                compile.destroyForcibly();
-                return new CodeResponse(false, List.of(), List.of("Compilation timed out. Exceeded 10 seconds compiling"), "", context.debug);
+            } else {
+                context.debug.add("CompileHandler: No compiled Test Unit because Question is Syntax only.");
             }
+        } catch (Exception e) {
+            return new CodeResponse(false, new ArrayList<>(), List.of(e.toString()), "", context.debug);
+        }
 
-            context.debug.add("CompileHandler: 🟢 Compilation Success.");
+        context.debug.add("CompileHandler: 🟢 Compilation Success.");
 
-            int compileStatus = compile.exitValue(); // now it's safe to read
+        if (context.syntax_coding_question_only){
+            context.debug.add("CompileHandler: 🟢 Coding Question is Syntax only.");
 
-            if (compileStatus  != 0) {
-                // if CHECK then deduct from syntax_points and set runtime and test case points to 0 then send response
-                if (context.action == CodeContext.Action.COMPILE || context.action == CodeContext.Action.CHECK) {
-                    context.debug.add("CompileHandler: 🔴 Compilation Unsuccessful.");
+            return new CodeResponse(
+                    true,
+                    new ArrayList<>(),
+                    new ArrayList<>(),
+                    "",
+                    List.of(new PointInfo(String.valueOf(context.syntax_points), "0", "0")),
+                    context.debug
+            );
+        }
 
+        context.debug.add("CompileHandler: 🟢 Now sending the context to RunTimeHandler.");
 
-                    Set<String> errorLines = new HashSet<>();
-                    Pattern errorPattern = Pattern.compile("\\.java:(\\d+): error");
+        // Then call next if exists
+        return next != null ? next.handle(context) : null;
+    }
 
-                    for (String line : compileOutput.split("\n")) {
-                        Matcher matcher = errorPattern.matcher(line);
-                        if (matcher.find()) {
-                            errorLines.add(matcher.group(1));
-                        }
-                    }
-                    int syntaxPointsToDeduct =  errorLines.size() * context.syntax_points_deduction;
-                    int deducted = Math.min(context.syntax_points, syntaxPointsToDeduct);
-                    int remainingSyntax = Math.max(0, context.syntax_points - deducted);
+    private CodeResponse executeCompilationProcess(Process process, String processName, CodeContext context, Boolean isSolution) throws IOException {
+        context.debug.add("CompileHandler: Compiling " + processName + "... will throw exception if it exceeds 10 seconds.");
 
-                    // Set others to 0 if syntax fails
-                    int remainingRuntime = 0;
-                    int remainingTestcase = 0;
+        boolean finished;
+        try {
+            finished = process.waitFor(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            context.debug.add("CompileHandler: 🔴 " + processName + " Compilation interrupted.");
+            process.destroyForcibly();
+            return new CodeResponse(false, List.of(), List.of("Compilation interrupted."), "", context.debug);
+        }
 
-                    CodeResponse response = new CodeResponse(
-                            false,
-                            new ArrayList<>(),
-                            List.of(compileOutput),
-                            "",
-                            List.of(new PointInfo(String.valueOf(remainingSyntax), String.valueOf(remainingRuntime), String.valueOf(remainingTestcase))),
-                            context.debug
-                    );
+        if (!finished) {
+            context.debug.add("CompileHandler: 🔴 " + processName + " Compilation exceeded 10 seconds and now will be destroyed.");
+            process.destroyForcibly();
+            return new CodeResponse(
+                    false,
+                    List.of(),
+                    List.of("Compilation timed out for " + processName + ". Exceeded 10 seconds compiling"),
+                    "",
+                    context.debug
+            );
+        }
+        String compileOutput = read(process.getInputStream());
 
-                    return response;
+        // Check the compilation exit status
+        int compileStatus = process.exitValue();
+        if (compileStatus != 0) {
+            context.debug.add("CompileHandler: 🔴 " + processName + " Compilation Unsuccessful (Exit Code: " + compileStatus + ").");
 
-                } else {
-                    context.debug.add("CompileHandler: 🔴 Compiling returns blank.");
+            Set<String> errorLines = new HashSet<>();
+            Pattern errorPattern = Pattern.compile("\\.java:(\\d+): error");
 
-                    return new CodeResponse(false, new ArrayList<>(), List.of(compileOutput), "", context.debug);
+            for (String line : compileOutput.split("\n")) {
+                Matcher matcher = errorPattern.matcher(line);
+                if (matcher.find()) {
+                    errorLines.add(matcher.group(1));
                 }
             }
+            int syntaxPointsToDeduct =  errorLines.size() * context.syntax_points_deduction;
+            int deducted = Math.min(context.syntax_points, syntaxPointsToDeduct);
+            int remainingSyntax = Math.max(0, context.syntax_points - deducted);
 
-            if (context.action == CodeContext.Action.COMPILE) {
+            // Set others to 0 if syntax fails
+            int remainingRuntime = 0;
+            int remainingTestcase = 0;
+
+            if (isSolution){
+                return new CodeResponse(
+                        false,
+                        new ArrayList<>(),
+                        List.of(compileOutput),
+                        "",
+                        List.of(new PointInfo(String.valueOf(remainingSyntax), String.valueOf(remainingRuntime), String.valueOf(remainingTestcase))),
+                        context.debug
+                );
+            } else if (context.action == CodeContext.Action.COMPILE) {
                 context.debug.add("CompileHandler: 🟠 Request is to compile only.");
 
                 return new CodeResponse(
@@ -92,29 +140,42 @@ public class CompileHandler implements CodeHandler {
                         List.of(new PointInfo(String.valueOf(context.syntax_points), "0", "0")),
                         context.debug
                 );
+            } else {
+                return new CodeResponse(
+                        false,
+                        List.of(),
+                        List.of(compileOutput),
+                        "",
+                        context.debug
+                );
             }
-        } catch (Exception e) {
-            return new CodeResponse(false, new ArrayList<>(), List.of(e.toString()), "", context.debug);
         }
+        context.debug.add("CompileHandler: 🟢 " + processName + " Compilation Success.");
 
-        context.debug.add("CompileHandler: 🟢 Now sending the context to RunTimeHandler.");
-
-        // Then call next if exists
-        return next != null ? next.handle(context) : null;
+        return null;
     }
 
-    protected Process compileCode(String nameCode, String nameTestUnit) throws IOException {
+    protected Process compileSolutionCode(String nameCode) throws IOException {
         Process compile = new ProcessBuilder(
                 "javac",
                 "-cp", "lib/junit-platform-console-standalone-1.13.1.jar",
                 "-d", "out",
-                "src/main/java/" + nameCode + ".java",
+                "src/main/java/" + nameCode + ".java")
+                .redirectErrorStream(true)
+                .start();
+        return compile;
+    }
+    protected Process compileTestUnit(String nameTestUnit) throws IOException {
+        Process compile = new ProcessBuilder(
+                "javac",
+                "-cp", "lib/junit-platform-console-standalone-1.13.1.jar" +
+                File.pathSeparator + "out",
+                "-d", "out",
                 "src/test/java/" + nameTestUnit + ".java")
                 .redirectErrorStream(true)
                 .start();
         return compile;
     }
-
     protected String read(InputStream input) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(input));
         StringBuilder builder = new StringBuilder();

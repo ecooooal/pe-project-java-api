@@ -111,6 +111,7 @@ public class Main {
         String body = new String(bodyStream.readAllBytes(), StandardCharsets.UTF_8);
         System.out.println(body);
         CodeContext context = gson.fromJson(body, CodeContext.class);
+        context.assignVariables();
         context.assignClassNames();
         System.out.println(context);
 

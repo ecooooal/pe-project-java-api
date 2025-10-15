@@ -31,13 +31,15 @@ public class SaveCodeHandler implements CodeHandler {
             return new CodeResponse(false, List.of(), List.of("Failed to save user code: " + e.getMessage()), "", context.debug);
         }
 
-
-        try (FileWriter writer = new FileWriter(testUnitPath + context.nameTestUnit + ".java")) {
-            writer.write(context.testUnit);
-        } catch (IOException e) {
-            context.debug.add("SaveCodeHandler: 🔴 Saving test code threw exception.");
-            return new CodeResponse(false, List.of(), List.of("Failed to save test code: " + e.getMessage()), "", context.debug);
+        if (!context.syntax_coding_question_only){
+            try (FileWriter writer = new FileWriter(testUnitPath + context.nameTestUnit + ".java")) {
+                writer.write(context.testUnit);
+            } catch (IOException e) {
+                context.debug.add("SaveCodeHandler: 🔴 Saving test code threw exception.");
+                return new CodeResponse(false, List.of(), List.of("Failed to save test code: " + e.getMessage()), "", context.debug);
+            }
         }
+
 
         context.debug.add("SaveCodeHandler: 🟢 Saving success, now sending the context to CompileHandler.");
 
