@@ -1,0 +1,24 @@
+# Maven and IntelliJ/IDEA junk
+target/
+.idea/
+*.iml
+*.class
+
+# Maven cache (don't copy this from host)
+.mvn/
+.mvnw
+.mvnw.cmd
+
+# OS & temp files
+*.log
+*.swp
+.DS_Store
+Thumbs.db
+
+# Git & VCS
+.git/
+.gitignore
+
+# Docker and editor
+docker-compose.override.yml
+*.bak
