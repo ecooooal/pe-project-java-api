@@ -5,6 +5,7 @@ WORKDIR /app
 
 # Copy full project
 COPY . /app
+COPY src/test .app/src/test
 
 # Install dependencies and package fat jar (skip tests)
 RUN mvn clean package -DskipTests
